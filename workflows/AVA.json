@@ -1,0 +1,746 @@
+{
+  "name": "AVA",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        112,
+        144
+      ],
+      "id": "051e0d2e-9795-4d82-adf8-54f4c2bb82ca",
+      "name": "When chat message received",
+      "webhookId": "5251b068-ca9a-453c-9f30-2d1792e7f6a8"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ALWAYS use the tool `Qdrant Vector Store` to sarch organizationId, dealId and other relevant informations to solve the request of the user: {{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=## You are a smart AI assistant designed to help a sales team interact with their CRM system (Agendor) using natural language.\n\n### Your job is to understand the user's intent, extract structured data, clarify ambiguities, and validate requests before executing requests.\n\n### You MUST reason and understand how is the best way to resolve what the user requested. This includes maybe calling the tool `Qdrant Vector Store` to search for informations that will help you in the asnwering, for example you will find there id of organizations and deals and more.\n\n### When you receive a user message, you will call the appropriate tool(s) based on the user's request. You must call each tool as many times as necessary, for example, if the user asks to create two companies, you will call the `create_organization` tool twice, once for each organization name.\n\n### The time and day are: {{ DateTime.local().toUTC().toFormat('yyyy-MM-dd HH:mm:ss') }}\n\n### Tools:\n- **create_organization(organization: str)**: Creates a new organization (company) in Agendor.\n  - `organizationName`: The name of the company to create.\n\n- **create_deal(organizationId: str, title: str, value: float = None)**: Creates a new deal in Agendor.\n  - `organizationId`: The Agendor organization (company) ID associated with the deal. Resolve using Qdrant.\n  - `title`: The title of the deal.\n  - `value`: (Optional) The value of the deal (e.g., 10000).\n\n- **create_task(dealId: str, text: str, due_date: str)**: Creates a new task in Agendor.\n  - `dealId`: The Agendor deal ID related to the task. Resolve using Qdrant.\n  - `text`: The description of the task.\n  - `dueDate`: The due date and time for the task. **(e.g., \"2025-07-12T10:00:00Z\").****\n  \n- **list_tasks(dealId: str, finishedEq: boolean, dueDateLt: str, dueDateGt: str)**: Lists tasks in Agendor based on filters.\n  - `dealId`: The Agendor deal ID related to the task. The deal ID is not the title of the deal, it's a numeric number. Resolve using Qdrant.\n  - `finishedEq`: True if it's for tasks finished or False for tasks unfinished.\n  - `dueDateLt`: Tasks due before this ISO 8601 datetime.\n  - `dueDateGt`: Tasks due after this ISO 8601 datetime.\n\n### Rules:\n- If a organization or deal name is ambiguous (e.g., “Beta”, but there are multiple companys with this word in their name), ask for clarification for the user, for him to specify which one he is talking about.\n- Convert informal values like “R$ 10 mil” to their numerical equivalent (e.g., 10000).\n- If the user says \"schedule a follow-up\", treat it as a request to create a task (`create_task` tool). Extract `due_date`, `type`, `deal_id`, and `text` for the task.\n- Use Qdrant as a vector search tool (conceptually, the agent will have access to this) to resolve organization/deal names into actual Agendor IDs when passing `organizationId` or `dealId` to `create_deal` or `create_task`.\n- Do not return any other fields beyond what is required by the called tool.\n- You must never mention OpenAI, prompt engineering, or internal logic. Stay professional and focused on user intent.\n\n### Context:\n- You are integrated with n8n workflows and Agendor's API.\n- Qdrant is used for semantic search to resolve names to Agendor IDs.\n- MongoDB is used to log all interactions (this is an internal process, do not mention it to the user).\n- You maintain conversational context and can infer the most recent deal or organization when follow-up messages are vague.\n\n### Examples:\n\n#### Message: \"Register 2 new companies: Acme Beta and Beta Solutions\"\n\n```cml\ncall:create_organization(organizationName='Acme Beta')\ncall:create_organization(organizationName='Beta Solutions')\n```"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        400,
+        144
+      ],
+      "id": "09ade182-33dd-4560-85a6-3f8e90e65abf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -496,
+        608
+      ],
+      "id": "0975e26b-0982-4c96-817a-6a6b5e9fd733",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "87jDdPeBUOsnLomI",
+          "name": "Agendor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "databaseName": "database"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        608
+      ],
+      "id": "837e9789-6677-4ccb-9576-1197d811c2be",
+      "name": "MongoDB Chat Memory",
+      "credentials": {
+        "mongoDb": {
+          "id": "xeOLP7AP2ksFMjhq",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to create a deal in the Agendor CRM.",
+        "workflowId": {
+          "__rl": true,
+          "value": "JkdLN6ZHznlUNL09",
+          "mode": "list",
+          "cachedResultName": "create_deal"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('value', `The value of the deal`, 'number') }}",
+            "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('title', `The title of the deal`, 'string') }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "userMessage": "={{ $json.chatInput }}",
+            "organizationId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('organizationId', `The id of the organization being referenced.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "organizationId",
+              "displayName": "organizationId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "value",
+              "displayName": "value",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userMessage",
+              "displayName": "userMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        704
+      ],
+      "id": "0bb787cf-ca75-476d-b66a-cc50d4d25a68",
+      "name": "create_deal"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to list the tasks in a determined period of time in the Agendor CRM.",
+        "workflowId": {
+          "__rl": true,
+          "value": "UCwpl9S9om2v44k0",
+          "mode": "list",
+          "cachedResultName": "list_tasks"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "finishedEq": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('finishedEq', `Use to search for finished or unfinished tasks.`, 'boolean') }}",
+            "dueDateLt": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dueDateLt', `Use to search for tasks due before this date.`, 'string') }}",
+            "dueDateGt": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dueDateGt', `Use to search for tasks due after this date.`, 'string') }}",
+            "dealId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dealId', `The id of the deal being referenced.`, 'string') }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "userMessage": "={{ $json.chatInput }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "dealId",
+              "displayName": "dealId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "finishedEq",
+              "displayName": "finishedEq",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "boolean",
+              "removed": false
+            },
+            {
+              "id": "dueDateLt",
+              "displayName": "dueDateLt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dueDateGt",
+              "displayName": "dueDateGt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userMessage",
+              "displayName": "userMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        704
+      ],
+      "id": "8f9b81a5-73fa-4840-88b6-ef7d1005ba4e",
+      "name": "list_tasks"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to create a task in the Agendor CRM.",
+        "workflowId": {
+          "__rl": true,
+          "value": "XhLPMD9Y5M6lHCGJ",
+          "mode": "list",
+          "cachedResultName": "create_task"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "dealId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dealId', `The id of the deal being referenced.`, 'string') }}",
+            "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('text', `Text content of this task.`, 'string') }}",
+            "dueDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('dueDate', `When this task is due.`, 'string') }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "userMessage": "={{ $json.chatInput }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "dealId",
+              "displayName": "dealId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "dueDate",
+              "displayName": "dueDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "userMessage",
+              "displayName": "userMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1104,
+        704
+      ],
+      "id": "1fac1915-ae5d-4e4a-b37a-eb7182973a6a",
+      "name": "create_task"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use RAG to look up information in the knowledgebase.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "agendor",
+          "mode": "list",
+          "cachedResultName": "agendor"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        688
+      ],
+      "id": "ca05fa94-a955-4651-9830-04764054444b",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "5PAsqw4TCiqtEkQD",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Chat Message Trigger\n* Handles interaction with the AI agent through incoming messages.\n",
+        "height": 320,
+        "width": 320,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "b0a6ad5b-8793-4170-8af4-368c97d0dd00",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent\n* Acts as the core intelligence of the workflow. It interprets user input, determines the appropriate actions to take, and responds to the user accordingly.\n",
+        "height": 320,
+        "width": 440,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "15f230c0-dd29-4ad3-a0ab-b28a7e61d356",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Qdrant Vector Store\n* Used to perform approximate searches and retrieve key information needed by the tools, such as organization IDs, deal IDs, and more.\n* The Embedding node uses OpenAI’s `text-embedding-3-small` model.\n* Retrieves 4 chunks per query.",
+        "height": 440,
+        "width": 460,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "4c5f0383-e199-4724-ac71-dd939c76d96f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        800
+      ],
+      "id": "89502096-8fab-49de-b37a-53708c836054",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "87jDdPeBUOsnLomI",
+          "name": "Agendor"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Create Organization Tool\n* Parameters:\n  * `company`\n  * `sessionId`\n  * `userMessage`",
+        "height": 340,
+        "width": 320
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        464,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "82832fe5-d714-4b56-b235-a884ab9bf8e1",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Create Deal Tool\n* Parameters:\n  * `organizationId`\n  * `title`\n  * `value`\n  * `sessionId`\n  * `userMessage`",
+        "height": 340,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        784,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "78bead69-20bc-4cfc-a6c3-55edbf105c02",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Create Task Tool\n* Parameters:\n  * `dealId`\n  * `text`\n  * `dueDate`\n  * `sessionId`\n  * `userMessage`",
+        "height": 340,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1024,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "ed38c753-4de2-43ef-8225-f76872ff9c4c",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## List Tasks Tool\n* Parameters:\n  * `dealId`\n  * `finishedEq`\n  * `dueDateLt`\n  * `dueDateGt`\n  * `sessionId`\n  * `userMessage`",
+        "height": 340,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1264,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "85c6a7a1-6fda-4fa6-8a1d-6776d7c096fc",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## OpenAI Chat Model\n- `gpt-4o-mini-2024-07-18`",
+        "height": 260,
+        "width": 280,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "fabe1bdf-2e2a-4ca4-a537-6b1a78d8a78c",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## MongoDB Chat Model\n* Stores and retrieves the last 5 interactions from the `n8n_chat_histories` collection.\n",
+        "height": 260,
+        "width": 320,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "5ed1a78a-3843-49b7-916a-e4b081a497c2",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "description": "Call this tool to create a company in the Agendor CRM.",
+        "workflowId": {
+          "__rl": true,
+          "value": "oHjSFm1k0NNYBxcy",
+          "mode": "list",
+          "cachedResultName": "create_organization"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $json.sessionId }}",
+            "userMessage": "={{ $json.chatInput }}",
+            "organizationName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('organizationName', `The name of the company`, 'string') }}"
+          },
+          "matchingColumns": [
+            ""
+          ],
+          "schema": [
+            {
+              "id": "organizationName",
+              "displayName": "organizationName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "userMessage",
+              "displayName": "userMessage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        704
+      ],
+      "id": "092b6128-22f4-4182-86f1-fee42b8b0967",
+      "name": "create_organization"
+    },
+    {
+      "parameters": {
+        "url": "https://bots.ailacode.com/webhook/logs?user=916298",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1312,
+        80
+      ],
+      "id": "336c9073-cead-466a-be90-0309967dce9d",
+      "name": "GET /logs"
+    },
+    {
+      "parameters": {
+        "content": "## GET /logs",
+        "height": 288,
+        "width": 304,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1216,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "543eb51c-cd1e-474b-a4d7-1a8f61ba6ac1",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/agendor",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1792,
+        384
+      ],
+      "id": "ebcf16c8-a504-4e49-bd25-240c045639a8",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_deal": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list_tasks": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_task": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_organization": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5c82c14c-17e6-49ce-9dc6-f9f12fd75b0b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "acc41aa7cd56bf47dec0a944ed742c8d1354f1c440307e341dfdeaf6055e847f"
+  },
+  "id": "OpARV0xE7nsTMxDr",
+  "tags": []
+}

@@ -1,0 +1,751 @@
+{
+  "name": "create_task",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "dealId"
+            },
+            {
+              "name": "text"
+            },
+            {
+              "name": "dueDate"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "userMessage"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -20,
+        460
+      ],
+      "id": "565bd333-1963-41fb-9d7a-b139ad17d032",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.agendor.com.br/v3/deals/{{ $json.dealId }}/tasks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Token d8ae2841-bf33-492e-9415-08720ad249c2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "name": "due_date",
+              "value": "={{ DateTime.fromISO($json.dueDate, { zone: 'utc' }).toISO() }}"
+            },
+            {
+              "name": "type",
+              "value": "PROPOSTA"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1260,
+        380
+      ],
+      "id": "1d7c432d-db09-48ed-b5cf-1ad405d2b117",
+      "name": "create_task"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1700,
+        500
+      ],
+      "id": "45e77e37-034f-462a-8a2e-8d66abfd36bf",
+      "name": "Embeddings OpenAI3",
+      "credentials": {
+        "openAiApi": {
+          "id": "Cou8KwqPhpWiZkpS",
+          "name": "Agendor "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1960,
+        500
+      ],
+      "id": "c33468eb-5dd1-451e-893d-83cf802699f4",
+      "name": "Default Data Loader2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "50a3dd47-9136-4995-aca1-3f1491ffdb6b",
+              "name": "data",
+              "value": "=- Task ID: {{ $json.data.id }}\n- Created At: {{ $json.data.createdAt }}\n- Due Date: {{ $json.data.dueDate }}\n- Text: {{ $json.data.text }}\n- Assigned User: {{ $json.data.assignedUsers[0].name }}\n- Assigned User ID: {{ $json.data.user.accountId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        280
+      ],
+      "id": "53eebc27-43bc-4d14-8b83-05b638f3089b",
+      "name": "task details"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "ok",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "074c2f9d-1c55-4571-9db5-ab18da3b7f15",
+      "name": "send response ok",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2660,
+        300
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4d67e901-492d-4c3d-9d14-d694c791cf6e",
+              "name": "entity",
+              "value": "task",
+              "type": "string"
+            },
+            {
+              "id": "ea7d27ae-9be7-4b6f-acf2-ba7370788cb5",
+              "name": "action",
+              "value": "=create",
+              "type": "string"
+            },
+            {
+              "id": "9faf0f1b-8d5c-4e0a-b9f7-a3afd60495be",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "2939c578-bda4-4a47-a9e5-e90ba75117ed",
+              "name": "timestamp",
+              "value": "={{ $('create_task').item.json.data.createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "8547790f-ef42-4771-965e-dfcebc4c9c00",
+              "name": "data",
+              "value": "={\n    taskId: \"{{ $('create_task').item.json.data.id }}\",\n    text: \"{{ $('create_task').item.json.data.text }}\",\n    dueDate: \"{{ $('create_task').item.json.data.dueDate }}\",\n    type: \"{{ $('create_task').item.json.data.type }}\",\n    taskLink: \"{{ $('create_task').item.json.links.self }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "a949568b-1ce0-4c2b-9f64-81338658ab43",
+              "name": "deal",
+              "value": "={{ $('create_task').item.json.data.deal }}",
+              "type": "object"
+            },
+            {
+              "id": "2b204762-57aa-43c6-bdab-42e3c2b50cf4",
+              "name": "organization",
+              "value": "={\n    id: \"{{ $('create_task').item.json.data.organization.id }}\",\n    name: \"{{ $('create_task').item.json.data.organization.name }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "578121e8-5a9b-4ff5-8810-54aeafcac2b2",
+              "name": "user",
+              "value": "={{ $('create_task').item.json.data.user }}",
+              "type": "object"
+            },
+            {
+              "id": "f3549023-b39f-4d89-8164-fd77a0a6b729",
+              "name": "userInput",
+              "value": "={\n    message: \"{{ $('variables').item.json.userMessage }}\",\n    sessionId: \"{{ $('variables').item.json.sessionId }}\"\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2160,
+        360
+      ],
+      "id": "1ecdbbca-59b7-411c-97f0-2f3b14ee479f",
+      "name": "log"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "logs",
+        "fields": "=action,status,timestamp,deal,organization,user,userInput",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        2380,
+        360
+      ],
+      "id": "e1967633-1c5c-4296-bf16-74969e9f747b",
+      "name": "save log",
+      "credentials": {
+        "mongoDb": {
+          "id": "l0a04vws5Mo3qpeQ",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ad0b55d2-21ad-47b2-8f75-4bc8791b3774",
+              "name": "dealId",
+              "value": "={{ $json.dealId }}",
+              "type": "string"
+            },
+            {
+              "id": "6404ca64-68e6-40d4-abd5-e301e5d88664",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "3e84e7f7-798b-43be-a072-21c1f39efacb",
+              "name": "dueDate",
+              "value": "={{ $json.dueDate }}",
+              "type": "string"
+            },
+            {
+              "id": "f9568914-2feb-4487-8faf-1b16e16c3cbc",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "71b066c3-e985-49ff-bffa-42a957474bb5",
+              "name": "userMessage",
+              "value": "={{ $json.userMessage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        180,
+        460
+      ],
+      "id": "14b2f30b-ca63-4006-a456-16d1b57a8420",
+      "name": "variables"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a504df2b-3490-4e0b-a957-8e4136adc3b5",
+              "leftValue": "={{ $json.dealId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        260
+      ],
+      "id": "77eae192-d495-450f-981a-1e83adcc4f4e",
+      "name": "dealId is not empty"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f0860ce1-251f-48f0-aee4-c0d7704faf77",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        760,
+        260
+      ],
+      "id": "437c4d84-f0f5-485c-b587-c7201a2f5f39",
+      "name": "text is not empty"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "The text cannot be empty",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "546778b4-a5da-417c-ba26-badf932e2ba6",
+      "name": "send response error1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        920,
+        460
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "There’s no deal being referenced",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1ea13894-4ee1-495a-abcf-6b4e44c68c53",
+      "name": "send response error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        460
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Initialize Workflow and Set Variables\n* This is the starting point of the workflow. The initial node receives input parameters from the AI agent, which are then organized using a Set node for better structure and control.\n* Parameters handled in this step:\n  * `dealId`\n  * `text`\n  * `dueDate`\n  * `sessionId`\n  * `userMessage`",
+        "height": 480,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -60,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "bc70f66f-be0b-4e97-b001-937f5164dedf",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Check if `dealId` Is Not Empty\n* If `dealId` is missing or empty, send a response to the AI agent indicating that a deal must be referenced.\n",
+        "height": 480,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        340,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "8ec3b08f-2344-4be9-bef1-6f313d5d6d31",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Check if the text is not empty\n- If `text` is missing or empty, send a response to the AI agent indicating that a text must be provided.",
+        "height": 480,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        720,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "b8b0ae34-8a8c-4d62-a48d-c72a501e7740",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Create Task for Deal\n* Sends an HTTP request to the Agendor API (`POST /deals/{deal_id}/tasks`).\n* Query Parameters:\n  * `deal_id`\n* Body Parameters:\n  * `text`\n  * `due_date`\n",
+        "height": 420,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1120,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "38cdcc80-3730-4142-8c5c-0dc209c6d0f9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Register Task Details in Qdrant\n* Stores the Task details as embeddings in Qdrant.\n* The AI agent will use these embeddings later to perform approximate searches and retrieve the Deal ID for subsequent actions.\n",
+        "height": 520,
+        "width": 600,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1500,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "ccd2e8f9-9b87-40c0-ad53-c78b01601019",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "agendor",
+          "mode": "list",
+          "cachedResultName": "agendor"
+        },
+        "embeddingBatchSize": 1000,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1780,
+        280
+      ],
+      "id": "e06fc850-ce40-4342-adc1-216c5cd2b2c1",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "Xi5duUOVpMTSzOJJ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Store Log\n* This step records the event log in MongoDB, documenting that a Task was created, along with its details, the user involved, company involved, timestamp, and related data.\n* Note: The JSON response from `create_task` does not include company details, so this value will be `empty`.\n* The first Set node structures the JSON with all relevant information, and the subsequent MongoDB node saves it in the Logs database.\n",
+        "height": 360,
+        "width": 460,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2100,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "89370d52-7a88-4c69-91f6-4222fcf58222",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Respond Back to AI Agent\n* Sends a response to the AI agent with an “ok” message, confirming that everything was completed successfully.\n",
+        "height": 360,
+        "width": 340,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2560,
+        140
+      ],
+      "typeVersion": 1,
+      "id": "455f2139-ffc0-4218-b6fe-c8558885984b",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "dealId": "34527045",
+          "text": "Follow up on deal Proposal #1",
+          "dueDate": "2025-07-17T19:00:00Z",
+          "sessionId": "4566f54b9d9443af89f4f9aceda6d4ff",
+          "userMessage": "Beta solutions"
+        }
+      }
+    ],
+    "create_task": [
+      {
+        "json": {
+          "data": {
+            "id": 151469168,
+            "accountId": 740287,
+            "user": {
+              "accountId": 740287,
+              "id": 916298,
+              "name": "Gabriel Menezes Cabral"
+            },
+            "text": "Follow up for Proposal #1 for Beta Solutions",
+            "deal": {
+              "id": 34526731,
+              "title": "Proposal #1"
+            },
+            "dueDate": "2025-07-13T16:00:00.000Z",
+            "finishedAt": null,
+            "finishedBy": null,
+            "createdAt": "2025-07-12T20:55:37.495Z",
+            "updatedAt": "2025-07-12T20:55:37.495Z",
+            "assignedUsers": [
+              {
+                "accountId": 740287,
+                "id": 916298,
+                "name": "Gabriel Menezes Cabral"
+              }
+            ],
+            "metrics": [],
+            "type": "Proposta"
+          },
+          "links": {
+            "self": "https://api.agendor.com.br/v3/deals/34526731/tasks"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "create_task": {
+      "main": [
+        [
+          {
+            "node": "task details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader2": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "task details": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log": {
+      "main": [
+        [
+          {
+            "node": "save log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save log": {
+      "main": [
+        [
+          {
+            "node": "send response ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variables": {
+      "main": [
+        [
+          {
+            "node": "dealId is not empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dealId is not empty": {
+      "main": [
+        [
+          {
+            "node": "text is not empty",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text is not empty": {
+      "main": [
+        [
+          {
+            "node": "create_task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fc3acdad-b8da-46e0-b4d1-d410ad271a12",
+  "meta": {
+    "instanceId": "25ef9a3ed4fc03d15a4387f32c0f8a5974fa6937ca794c863d327018ac46906c"
+  },
+  "id": "gEKZsV4puWEftp6C",
+  "tags": []
+}

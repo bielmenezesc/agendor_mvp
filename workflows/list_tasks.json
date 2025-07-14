@@ -1,0 +1,532 @@
+{
+  "name": "list_tasks",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "dealId"
+            },
+            {
+              "name": "finishedEq",
+              "type": "boolean"
+            },
+            {
+              "name": "dueDateLt"
+            },
+            {
+              "name": "dueDateGt"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "userMessage"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        20,
+        0
+      ],
+      "id": "b040db04-bc83-4641-9a04-dbff9f9ad5b9",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.agendor.com.br/v3/deals/{{ $json.dealId }}/tasks",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "finishedEq",
+              "value": "={{ $json.finishedEq }}"
+            },
+            {
+              "name": "dueDateLt",
+              "value": "={{ $json.dueDateLt }}"
+            },
+            {
+              "name": "dueDateGt",
+              "value": "={{ $json.dueDateGt }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Token d8ae2841-bf33-492e-9415-08720ad249c2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        -60
+      ],
+      "id": "58dc6693-bcac-43cf-b2b3-0c790ccfbf3c",
+      "name": "list_tasks"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "={{ $('list_tasks').item.json.data }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "628a07df-922f-4b5f-b4f5-7b30354333fc",
+      "name": "send response ok",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        -140
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4d67e901-492d-4c3d-9d14-d694c791cf6e",
+              "name": "entity",
+              "value": "task",
+              "type": "string"
+            },
+            {
+              "id": "ea7d27ae-9be7-4b6f-acf2-ba7370788cb5",
+              "name": "action",
+              "value": "=list",
+              "type": "string"
+            },
+            {
+              "id": "9faf0f1b-8d5c-4e0a-b9f7-a3afd60495be",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "2939c578-bda4-4a47-a9e5-e90ba75117ed",
+              "name": "timestamp",
+              "value": "={{ $json.data[0].createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "8547790f-ef42-4771-965e-dfcebc4c9c00",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "array"
+            },
+            {
+              "id": "a949568b-1ce0-4c2b-9f64-81338658ab43",
+              "name": "deal",
+              "value": "={{ $json.data[0].deal }}",
+              "type": "object"
+            },
+            {
+              "id": "2b204762-57aa-43c6-bdab-42e3c2b50cf4",
+              "name": "organization",
+              "value": "={\n    id: \"{{ $('list_tasks').item.json.data.organization.id }}\",\n    name: \"{{ $('list_tasks').item.json.data.organization.name }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "578121e8-5a9b-4ff5-8810-54aeafcac2b2",
+              "name": "user",
+              "value": "={{ $json.data[0].user }}",
+              "type": "object"
+            },
+            {
+              "id": "f3549023-b39f-4d89-8164-fd77a0a6b729",
+              "name": "userInput",
+              "value": "={\n    message: \"{{ $('variables').item.json.userMessage }}\",\n    sessionId: \"{{ $('variables').item.json.sessionId }}\"\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        -100
+      ],
+      "id": "2f52284b-e5b5-4216-b6a1-064674ac5eba",
+      "name": "log"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "logs",
+        "fields": "=action,status,timestamp,deal,organization,user,userInput",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        -100
+      ],
+      "id": "7efabef1-73c6-44c6-90cb-94ee68cb4c01",
+      "name": "save log",
+      "credentials": {
+        "mongoDb": {
+          "id": "l0a04vws5Mo3qpeQ",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b4f6f1e1-05fd-47a0-8484-dc8320e6d770",
+              "name": "dealId",
+              "value": "={{ $json.dealId }}",
+              "type": "string"
+            },
+            {
+              "id": "d8561334-7b92-4b36-80e4-e01b5e3c7e90",
+              "name": "finishedEq",
+              "value": "={{ $json.finishedEq }}",
+              "type": "boolean"
+            },
+            {
+              "id": "65f1d0b5-1125-41c5-bef1-85d914841e26",
+              "name": "dueDateLt",
+              "value": "={{ $json.dueDateLt }}",
+              "type": "string"
+            },
+            {
+              "id": "caca39a3-5852-48ec-afd4-13ea5737a480",
+              "name": "dueDateGt",
+              "value": "={{ $json.dueDateGt }}",
+              "type": "string"
+            },
+            {
+              "id": "be607aed-ab51-4528-944c-ab5cb1ee14d8",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "74ec7e91-1083-4de5-b995-76fed0f7d564",
+              "name": "userMessage",
+              "value": "={{ $json.userMessage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "id": "1bac7a9d-1f6f-4b93-bda8-d541ca26fdef",
+      "name": "variables"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f7b0403b-76fa-48a4-922b-a401e00fd93f",
+              "leftValue": "={{ $json.dealId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        420,
+        -180
+      ],
+      "id": "2b96c1a1-ce6b-4874-91d2-c82d5fa737a1",
+      "name": "dealId is not empty"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "There’s no deal being referenced",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c81ed518-d391-4a2b-a949-56b7d127bfe0",
+      "name": "send response error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        580,
+        0
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Initialize Workflow and Set Variables\n* This is the starting point of the workflow. The initial node receives input parameters from the AI agent, which are then organized using a Set node for better structure and control.\n* Parameters handled in this step:\n  * `dealId`\n  * `finishedEq`\n  * `dueDateLt`\n  * `dueDateGt`\n  * `sessionId`\n  * `userMessage`",
+        "height": 480,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -20,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "53b9f3c5-6165-4161-8b06-c159a72c6401",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Check if `dealId` Is Not Empty\n* If `dealId` is missing or empty, send a response to the AI agent indicating that a deal must be referenced.\n",
+        "height": 480,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        380,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "dac1d9f6-cb50-4ba7-bbcf-6e192f908367",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## List Tasks of Deal\n* Sends an HTTP request to the Agendor API (`GET /deals/{deal_id}/tasks`).\n* Query Parameters:\n  * `deal_id`\n  * `finishedEq`\n  * `dueDateLt`\n  * `dueDateGt`\n\n",
+        "height": 420,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        760,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "b694daec-678d-44a3-a6b8-9bf375d00a7e",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Store Log\n* This step records the event log in MongoDB, documenting that a tasks where listed, along with its details, the user involved, company involved, timestamp, and related data.\n* Note: The JSON response from `list_task` does not include company details, so this value will be `empty`.\n* The first Set node structures the JSON with all relevant information, and the subsequent MongoDB node saves it in the Logs database.\n",
+        "height": 360,
+        "width": 460,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1140,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "38c37011-3916-43d3-b502-a5fb1a89bc7f",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Respond Back to AI Agent\n* Sends a response to the AI agent with an “ok” message, confirming that everything was completed successfully.\n",
+        "height": 360,
+        "width": 340,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1600,
+        -320
+      ],
+      "typeVersion": 1,
+      "id": "96cec39c-f516-471d-9a68-a8a4d04c5e9d",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "dealId": "151468937",
+          "finishedEq": false,
+          "dueDateLt": "2025-07-20T00:00:00Z",
+          "dueDateGt": "2025-07-12T00:00:00Z",
+          "sessionId": "4566f54b9d9443af89f4f9aceda6d4ff",
+          "userMessage": "Beta solutions"
+        }
+      }
+    ],
+    "list_tasks": [
+      {
+        "json": {
+          "data": [
+            {
+              "id": 151469028,
+              "accountId": 740287,
+              "user": {
+                "accountId": 740287,
+                "id": 916298,
+                "name": "Gabriel Menezes Cabral"
+              },
+              "text": "Schedule a follow up",
+              "deal": {
+                "id": 34526616,
+                "title": "Proposal #1"
+              },
+              "dueDate": "2025-07-25T16:00:00.000Z",
+              "finishedAt": null,
+              "finishedBy": null,
+              "createdAt": "2025-07-12T20:25:23.000Z",
+              "updatedAt": "2025-07-12T20:25:23.000Z",
+              "assignedUsers": [
+                {
+                  "accountId": 740287,
+                  "id": 916298,
+                  "name": "Gabriel Menezes Cabral"
+                }
+              ],
+              "metrics": [],
+              "type": "Proposta"
+            }
+          ],
+          "meta": {
+            "totalCount": null
+          },
+          "links": {
+            "self": "https://api.agendor.com.br/v3/deals/34526616/tasks?dueDateGt=2025-07-19T20%3A20%3A48Z&dueDateLt=2025-07-26T23%3A59%3A59Z&finishedEq=false"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list_tasks": {
+      "main": [
+        [
+          {
+            "node": "log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log": {
+      "main": [
+        [
+          {
+            "node": "save log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save log": {
+      "main": [
+        [
+          {
+            "node": "send response ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variables": {
+      "main": [
+        [
+          {
+            "node": "dealId is not empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dealId is not empty": {
+      "main": [
+        [
+          {
+            "node": "list_tasks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "debd1f7c-549a-42d6-aee8-f957dbd12f84",
+  "meta": {
+    "instanceId": "25ef9a3ed4fc03d15a4387f32c0f8a5974fa6937ca794c863d327018ac46906c"
+  },
+  "id": "smAVcI0utHfQAoPd",
+  "tags": []
+}

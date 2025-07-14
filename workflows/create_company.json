@@ -1,0 +1,813 @@
+{
+  "name": "create_company",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.agendor.com.br/v3/organizations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Token d8ae2841-bf33-492e-9415-08720ad249c2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('When Executed by Another Workflow').item.json.organizationName }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1420,
+        80
+      ],
+      "id": "cc5536bb-7faa-407f-84c9-88bf5a54a2d4",
+      "name": "create_company"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.agendor.com.br/v3/organizations?name={{ $json.organizationName }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Token d8ae2841-bf33-492e-9415-08720ad249c2"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        780,
+        60
+      ],
+      "id": "d74d7b51-6547-467b-840b-1024ee807836",
+      "name": "list_organizations"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c7bcd709-3e5c-41b7-b09c-45993c210572",
+              "leftValue": "={{ $json.meta.totalCount }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        60
+      ],
+      "id": "f7bfdf04-7aff-4eeb-ab75-452e1b9be884",
+      "name": "organization does not exists?"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "agendor",
+          "mode": "list",
+          "cachedResultName": "agendor"
+        },
+        "embeddingBatchSize": 1000,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1960,
+        80
+      ],
+      "id": "6ac646a8-602c-4a92-822e-f0c288045518",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "Xi5duUOVpMTSzOJJ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1880,
+        280
+      ],
+      "id": "0e57e35e-fd2d-4d16-8d80-5657603c0e80",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "Cou8KwqPhpWiZkpS",
+          "name": "Agendor "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        2120,
+        280
+      ],
+      "id": "4c4bf7fb-e058-4836-b09d-b8b5ae43aa6f",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d4798565-aa06-4ee4-914f-a1e27375edd2",
+              "name": "data",
+              "value": "=- Company: {{ $json.data.name }}\n- ID: {{ $json.data.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1720,
+        80
+      ],
+      "id": "ff473c67-351e-4b8b-b184-c24de46039dd",
+      "name": "company details"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "organizationName"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "userMessage"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -40,
+        180
+      ],
+      "id": "f4180f70-2e67-4250-b800-d858147b2b6c",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "ok",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f7ab477-653f-4aa2-a76b-974813a85a31",
+      "name": "send response ok",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2820,
+        80
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "This company already exists in the CRM",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2a126517-a5d7-4c19-9ace-a793238bae9d",
+      "name": "send response error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        220
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c53ab89e-0a52-4237-8f32-0be42e7fb589",
+              "name": "entity",
+              "value": "organization",
+              "type": "string"
+            },
+            {
+              "id": "ea7d27ae-9be7-4b6f-acf2-ba7370788cb5",
+              "name": "action",
+              "value": "=create",
+              "type": "string"
+            },
+            {
+              "id": "9faf0f1b-8d5c-4e0a-b9f7-a3afd60495be",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "2939c578-bda4-4a47-a9e5-e90ba75117ed",
+              "name": "timestamp",
+              "value": "={{ $('create_company').item.json.data.createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "2b204762-57aa-43c6-bdab-42e3c2b50cf4",
+              "name": "data",
+              "value": "={\n    id: \"{{ $('create_company').item.json.data.id }}\",\n    name: \"{{ $('create_company').item.json.data.name }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "578121e8-5a9b-4ff5-8810-54aeafcac2b2",
+              "name": "user",
+              "value": "={{ $('create_company').item.json.data.ownerUser }}",
+              "type": "object"
+            },
+            {
+              "id": "f3549023-b39f-4d89-8164-fd77a0a6b729",
+              "name": "userInput",
+              "value": "={\n    message: \"{{ $('variables').item.json.userMessage }}\",\n    sessionId: \"{{ $('variables').item.json.sessionId }}\"\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2340,
+        80
+      ],
+      "id": "c021ae7f-3b75-484f-bd09-08333b2056d8",
+      "name": "log"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "logs",
+        "fields": "=action,status,timestamp,organization,user,userInput",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        2520,
+        80
+      ],
+      "id": "6bf97459-1664-4e49-a64f-d157a4621e54",
+      "name": "save log",
+      "credentials": {
+        "mongoDb": {
+          "id": "l0a04vws5Mo3qpeQ",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://bots.ailacode.com/webhook/logs?user=916298",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3420,
+        80
+      ],
+      "id": "12a83f13-02fd-4987-bc45-e15ac86559d4",
+      "name": "/GET logs"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cbceb377-0353-4e69-b21d-f174170915bb",
+              "name": "organizationName",
+              "value": "={{ $json.organizationName }}",
+              "type": "string"
+            },
+            {
+              "id": "eb4b4fab-d472-48a1-a501-aa08f00b1658",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "27af4dfa-a3f5-43d8-afc8-667b1692b70e",
+              "name": "userMessage",
+              "value": "={{ $json.userMessage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        140,
+        180
+      ],
+      "id": "8cf4bd7d-f8e3-4ed7-a1b1-45e20488b30a",
+      "name": "variables"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "This company name cannot be empty",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "44e6759a-745c-4f35-9ee9-b45978017d70",
+      "name": "send response error1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        220
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Check if organizationName is not empty\n- If `organizationName ` is missing or empty, send a response to the AI agent indicating that a name must be provided.",
+        "height": 480,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        320,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "958e2866-d40b-4851-9865-d18ae8cc9888",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Check if the Organization Already Exists\n* Sends an HTTP request to the Agendor API (`GET /organizations`) using the company name as a query parameter to check if an organization with that name already exists. If the response returns empty, the company does not exist.\n* If a match is found, send a response to the AI agent indicating that a company with this name is already registered.\n",
+        "height": 480,
+        "width": 580,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        700,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "23c8b681-ab07-462e-b808-b68b5f7b0ea1",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Create Company\n* Sends an HTTP request to the Agendor API (`POST /organizations`).\n* Body Parameters:\n  * `name`\n",
+        "height": 360,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1280,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "fac16885-59be-4fd5-96a6-f95b55e97b7c",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Register Company Details in Qdrant\n* Stores the company (organization) details as embeddings in Qdrant.\n* The AI agent will use these embeddings later to perform approximate searches and retrieve the company ID for subsequent actions.\n",
+        "height": 520,
+        "width": 600,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1660,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "ac20b5e0-51e2-4d66-b17e-398e67e56b99",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Store Log\n* This step records the event log in MongoDB, documenting that a company was created, along with its details, the user involved, timestamp, and related data.\n* The first Set node structures the JSON with all relevant information, and the subsequent MongoDB node saves it in the Logs database.\n",
+        "height": 360,
+        "width": 460,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2260,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "e51b999f-3a4f-4c9e-adc4-dfbf5c0b306c",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Respond Back to AI Agent\n* Sends a response to the AI agent with an “ok” message, confirming that everything was completed successfully.\n",
+        "height": 360,
+        "width": 340,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2720,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "8cfd04c3-6670-4fd4-af74-5fbaa7b7138b",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Initialize Workflow and Set Variables\n* This is the starting point of the workflow. The initial node receives input parameters from the AI agent, which are then organized using a Set node for better structure and control.\n* Parameters handled in this step:\n  * `company`\n  * `sessionId`\n  * `userMessage`",
+        "height": 480,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -80,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "96716506-59c8-4535-81c1-37c4b22dcac5",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "07e87f84-e78f-4021-9210-a2bc53a25efc",
+              "leftValue": "={{ $json.organizationName }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        380,
+        60
+      ],
+      "id": "e6e012e4-87ae-4166-a86a-02bdf15c6419",
+      "name": "name is not empty or invalid"
+    },
+    {
+      "parameters": {
+        "content": "## Change company for organization"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        120,
+        480
+      ],
+      "typeVersion": 1,
+      "id": "4648c642-912b-425d-95d2-369351c753bf",
+      "name": "Sticky Note7"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "organizationName": "Acme Beta",
+          "sessionId": "4566f54b9d9443af89f4f9aceda6d4ff",
+          "userMessage": "Beta solutions"
+        }
+      }
+    ],
+    "create_company": [
+      {
+        "json": {
+          "data": {
+            "id": 44970042,
+            "accountId": 740287,
+            "name": "Aliacode",
+            "legalName": null,
+            "email": null,
+            "cnpj": null,
+            "description": null,
+            "logo": {
+              "full": null,
+              "thumb": null,
+              "thumb_large": null
+            },
+            "ranking": 0,
+            "website": null,
+            "createdAt": "2025-07-12T23:20:35.791Z",
+            "updatedAt": "2025-07-12T23:20:35.791Z",
+            "products": [],
+            "contact": {
+              "email": null,
+              "work": null,
+              "mobile": null,
+              "fax": null,
+              "ramal": null,
+              "radio": null,
+              "whatsapp": null,
+              "facebook": null,
+              "twitter": null,
+              "linkedIn": null,
+              "skype": null,
+              "instagram": null
+            },
+            "address": {
+              "country": "Brasil",
+              "district": null,
+              "streetName": null,
+              "streetNumber": null,
+              "additionalInfo": null,
+              "postalCode": null,
+              "state": null,
+              "city": null
+            },
+            "category": null,
+            "leadOrigin": null,
+            "sector": null,
+            "people": [],
+            "author": {
+              "accountId": 740287,
+              "id": 916298,
+              "name": "Gabriel Menezes Cabral"
+            },
+            "ownerUser": {
+              "accountId": 740287,
+              "id": 916298,
+              "name": "Gabriel Menezes Cabral"
+            },
+            "allowedUsers": [
+              {
+                "accountId": 740287,
+                "id": 916298,
+                "name": "Gabriel Menezes Cabral"
+              }
+            ],
+            "_webUrl": "https://web.agendor.com.br/sistema/empresas/historico.php?id=44970042"
+          },
+          "links": {
+            "self": "https://api.agendor.com.br/v3/organizations"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "create_company": {
+      "main": [
+        [
+          {
+            "node": "company details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list_organizations": {
+      "main": [
+        [
+          {
+            "node": "organization does not exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "organization does not exists?": {
+      "main": [
+        [
+          {
+            "node": "create_company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "company details": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log": {
+      "main": [
+        [
+          {
+            "node": "save log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save log": {
+      "main": [
+        [
+          {
+            "node": "send response ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variables": {
+      "main": [
+        [
+          {
+            "node": "name is not empty or invalid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "name is not empty or invalid": {
+      "main": [
+        [
+          {
+            "node": "list_organizations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b0e3bc9e-4c84-46e0-9f0f-1a296447bbe8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "25ef9a3ed4fc03d15a4387f32c0f8a5974fa6937ca794c863d327018ac46906c"
+  },
+  "id": "OQWUkFKF7P8PGnn8",
+  "tags": []
+}

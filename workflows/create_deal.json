@@ -1,0 +1,824 @@
+{
+  "name": "create_deal",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.agendor.com.br/v3/organizations/{{ $json.organizationId }}/deals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Token d8ae2841-bf33-492e-9415-08720ad249c2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "value",
+              "value": "={{ $json.value }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        -80
+      ],
+      "id": "532744dc-04df-45c0-99e4-a5de7b311de9",
+      "name": "create_deal"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "agendor",
+          "mode": "list",
+          "cachedResultName": "agendor"
+        },
+        "embeddingBatchSize": 1000,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        1180,
+        -180
+      ],
+      "id": "aece8a2b-794c-4de0-bae6-3b6f34d2030c",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "Xi5duUOVpMTSzOJJ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1140,
+        20
+      ],
+      "id": "12f43c74-29e9-42db-9036-edf5ed2585f7",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "Cou8KwqPhpWiZkpS",
+          "name": "Agendor "
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        40
+      ],
+      "id": "df367191-275d-4878-8282-20f98724380a",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "50a3dd47-9136-4995-aca1-3f1491ffdb6b",
+              "name": "data",
+              "value": "=- Deal ID: {{ $json.data.id }}\n- Deal Title: {{ $json.data.title }}\n- Created At: {{ $json.data.startTime }}\n- Company: {{ $json.data.organization.name }}\n- Company ID: {{ $json.data.organization.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        940,
+        -180
+      ],
+      "id": "2f84b7ce-68d7-4bb8-8dc6-f06180303990",
+      "name": "deal details"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "organizationId"
+            },
+            {
+              "name": "title"
+            },
+            {
+              "name": "value",
+              "type": "number"
+            },
+            {
+              "name": "sessionId"
+            },
+            {
+              "name": "userMessage"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -620,
+        -20
+      ],
+      "id": "c4fe6df2-353f-41d1-9ddb-bdc13023586a",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "ok",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef36dab3-4058-47aa-94e7-1dcf8b6367cb",
+      "name": "send response ok",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2080,
+        -140
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b7162a71-6bd4-441a-954e-60901645641c",
+              "name": "entity",
+              "value": "deal",
+              "type": "string"
+            },
+            {
+              "id": "ea7d27ae-9be7-4b6f-acf2-ba7370788cb5",
+              "name": "action",
+              "value": "=create",
+              "type": "string"
+            },
+            {
+              "id": "9faf0f1b-8d5c-4e0a-b9f7-a3afd60495be",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "2939c578-bda4-4a47-a9e5-e90ba75117ed",
+              "name": "timestamp",
+              "value": "={{ $('create_deal').item.json.data.createdAt }}",
+              "type": "string"
+            },
+            {
+              "id": "38c822d2-1a75-418a-b2aa-ca5f5e4178c9",
+              "name": "data",
+              "value": "={\n    dealId: \"{{ $('create_deal').item.json.data.id }}\",\n    title: \"{{ $('create_deal').item.json.data.title }}\",\n    value: \"{{ $('create_deal').item.json.data.value }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "2b204762-57aa-43c6-bdab-42e3c2b50cf4",
+              "name": "organization",
+              "value": "={\n    id: \"{{ $('create_deal').item.json.data.organization.id }}\",\n    name: \"{{ $('create_deal').item.json.data.organization.name }}\"\n}",
+              "type": "object"
+            },
+            {
+              "id": "578121e8-5a9b-4ff5-8810-54aeafcac2b2",
+              "name": "user",
+              "value": "={{ $('create_deal').item.json.data.organization.ownerUser }}",
+              "type": "object"
+            },
+            {
+              "id": "f3549023-b39f-4d89-8164-fd77a0a6b729",
+              "name": "userInput",
+              "value": "={\n    message: \"{{ $('variables').item.json.userMessage }}\",\n    sessionId: \"{{ $('variables').item.json.sessionId }}\"\n}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1560,
+        -140
+      ],
+      "id": "564d6a80-9fa5-4d2a-ae6e-05f877338110",
+      "name": "log"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "logs",
+        "fields": "=action,status,timestamp,deal,organization,user,userInput",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1780,
+        -140
+      ],
+      "id": "0d6eb505-d32f-480b-a66e-9116f9cf9d72",
+      "name": "save log",
+      "credentials": {
+        "mongoDb": {
+          "id": "l0a04vws5Mo3qpeQ",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c4f2b470-659e-4032-9c8b-bdca942415a6",
+              "name": "organizationId",
+              "value": "={{ $json.organizationId }}",
+              "type": "string"
+            },
+            {
+              "id": "a3e22bd4-0b13-4ab9-b476-28d316181c84",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "9e256a21-58d8-4afa-825a-2ee16cee5458",
+              "name": "value",
+              "value": "={{ $json.value }}",
+              "type": "number"
+            },
+            {
+              "id": "5b963dd5-560a-48ef-96e8-dbfaa15fba54",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "b65726b8-f307-4211-b71e-8af54fddc4f6",
+              "name": "userMessage",
+              "value": "={{ $json.userMessage }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -420,
+        -20
+      ],
+      "id": "304125c5-1153-4929-83e9-96c45959bf5f",
+      "name": "variables"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e7091155-9b6c-481e-afd5-7fc095b95a6e",
+              "leftValue": "={{ $json.organizationId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -200,
+        -180
+      ],
+      "id": "e843ed62-fb52-4e29-b260-6e1ca824209d",
+      "name": "organizationId is not empty"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "17a34fc1-8cb4-48f8-bb93-6cfb4bdae741",
+              "leftValue": "={{ $json.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        180,
+        -200
+      ],
+      "id": "759dde0b-6c1f-496e-89fc-88ab7471f6da",
+      "name": "title is not empty"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "The title cannot be empty",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1b3917fd-e8d5-495f-84cc-7414a48640c3",
+      "name": "send response error1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        340,
+        -40
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2d55b5c-fa91-4efd-a5a0-a0e5b15e1817",
+              "name": "response",
+              "value": "There’s no company being referenced",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "eeab7110-fd70-4ade-be52-c0806d1b398d",
+      "name": "send response error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -40,
+        -20
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "content": "## Initialize Workflow and Set Variables\n* This is the starting point of the workflow. The initial node receives input parameters from the AI agent, which are then organized using a Set node for better structure and control.\n* Parameters handled in this step:\n  * `organizationId`\n  * `title`\n  * `value`\n  * `sessionId`\n  * `userMessage`",
+        "height": 480,
+        "width": 400,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -660,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "6e8e8af0-97fc-48ad-94ac-d6908f08f065",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## Check if the organizationId is not empty\n* If `organizationId` is missing or empty, send a response to the AI agent indicating that a deal must be referenced.",
+        "height": 480,
+        "width": 380
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -260,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "febf6d5e-8e58-48a6-bd25-8e9e3ac2dd12",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Check if the title is not empty\n- If `title` is missing or empty, send a response to the AI agent indicating that a title must be provided.",
+        "height": 480,
+        "width": 400,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        120,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "ee5bdb29-fb72-44c2-9e14-dea801223d79",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Create Deal for Organization\n* Sends an HTTP request to the Agendor API (`POST /organizations/{organization_id}/deals`).\n* Query Parameters:\n  * `organizationId`\n* Body Parameters:\n  * `title`\n  * `value`\n",
+        "height": 420,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        520,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "e3aad58a-bfe1-47be-9cf4-91c7c38c6835",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Register Deal Details in Qdrant\n* Stores the Deal details as embeddings in Qdrant.\n* The AI agent will use these embeddings later to perform approximate searches and retrieve the Deal ID for subsequent actions.\n",
+        "height": 520,
+        "width": 600,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        900,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "b95a5400-c7c1-48d0-a06a-ec103e3738a8",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Store Log\n* This step records the event log in MongoDB, documenting that a Deal was created, along with its details, the user involved, company involved, timestamp, and related data.\n* The first Set node structures the JSON with all relevant information, and the subsequent MongoDB node saves it in the Logs database.\n",
+        "height": 360,
+        "width": 460,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1500,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "c8bcfb06-7b79-4caa-8537-3477f965d9d0",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Respond Back to AI Agent\n* Sends a response to the AI agent with an “ok” message, confirming that everything was completed successfully.\n",
+        "height": 360,
+        "width": 340,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1960,
+        -340
+      ],
+      "typeVersion": 1,
+      "id": "61c3b29e-f786-4ec9-a73c-2dddd1de95ea",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "organizationId": "44970743",
+          "title": "Proposal #1",
+          "value": 10000,
+          "sessionId": "4566f54b9d9443af89f4f9aceda6d4ff",
+          "userMessage": "Beta solutions"
+        }
+      }
+    ],
+    "create_deal": [
+      {
+        "json": {
+          "data": {
+            "id": 34528665,
+            "parentDealId": null,
+            "title": "Proposal #1",
+            "accountId": 740287,
+            "startTime": "2025-07-13T17:09:26.090Z",
+            "endTime": null,
+            "wonAt": null,
+            "lostAt": null,
+            "organization": {
+              "id": 44970743,
+              "accountId": 740287,
+              "name": "Beta Solutions",
+              "legalName": null,
+              "email": null,
+              "cnpj": null,
+              "description": null,
+              "logo": {
+                "full": null,
+                "thumb": null,
+                "thumb_large": null
+              },
+              "ranking": 0,
+              "website": null,
+              "createdAt": "2025-07-13T17:09:00.000Z",
+              "updatedAt": "2025-07-13T17:09:00.000Z",
+              "products": [],
+              "contact": {
+                "email": null,
+                "work": null,
+                "mobile": null,
+                "fax": null,
+                "ramal": null,
+                "radio": null,
+                "whatsapp": null,
+                "facebook": null,
+                "twitter": null,
+                "linkedIn": null,
+                "skype": null,
+                "instagram": null
+              },
+              "address": {
+                "country": "Brasil",
+                "district": null,
+                "streetName": null,
+                "streetNumber": null,
+                "additionalInfo": null,
+                "postalCode": null,
+                "state": null,
+                "city": null
+              },
+              "category": null,
+              "leadOrigin": null,
+              "sector": null,
+              "people": [],
+              "author": {
+                "accountId": 740287,
+                "id": 916298,
+                "name": "Gabriel Menezes Cabral"
+              },
+              "ownerUser": {
+                "accountId": 740287,
+                "id": 916298,
+                "name": "Gabriel Menezes Cabral"
+              },
+              "allowedUsers": [
+                {
+                  "accountId": 740287,
+                  "id": 916298,
+                  "name": "Gabriel Menezes Cabral"
+                }
+              ],
+              "_webUrl": "https://web.agendor.com.br/sistema/empresas/historico.php?id=44970743"
+            },
+            "person": null,
+            "author": {
+              "accountId": 740287,
+              "id": 916298,
+              "name": "Gabriel Menezes Cabral"
+            },
+            "dealStage": {
+              "id": 3458801,
+              "name": "Contato",
+              "sequence": 1,
+              "funnel": {
+                "id": 829122,
+                "name": "Funil de Vendas"
+              }
+            },
+            "dealStatus": {
+              "id": 1,
+              "name": "Em andamento"
+            },
+            "lossReason": null,
+            "owner": {
+              "accountId": 740287,
+              "id": 916298,
+              "name": "Gabriel Menezes Cabral"
+            },
+            "description": null,
+            "createdAt": "2025-07-13T17:09:26.099Z",
+            "updatedAt": "2025-07-13T17:09:26.098Z",
+            "ranking": 0,
+            "value": 10000,
+            "products_entities": [],
+            "products": [],
+            "allowedUsers": [],
+            "_email": "proposal-740287n34528665@to.agendor.com.br",
+            "_webUrl": "https://web.agendor.com.br/sistema/negocios/historico.php?id=34528665"
+          },
+          "links": {
+            "self": "https://api.agendor.com.br/v3/organizations/44970743/deals"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "create_deal": {
+      "main": [
+        [
+          {
+            "node": "deal details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deal details": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log": {
+      "main": [
+        [
+          {
+            "node": "save log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save log": {
+      "main": [
+        [
+          {
+            "node": "send response ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "variables": {
+      "main": [
+        [
+          {
+            "node": "organizationId is not empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "organizationId is not empty": {
+      "main": [
+        [
+          {
+            "node": "title is not empty",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "title is not empty": {
+      "main": [
+        [
+          {
+            "node": "create_deal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "send response error1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "26910c74-24ab-4eb3-8253-6434458d6e7d",
+  "meta": {
+    "instanceId": "25ef9a3ed4fc03d15a4387f32c0f8a5974fa6937ca794c863d327018ac46906c"
+  },
+  "id": "vTvZzq9NQsgDwGLS",
+  "tags": []
+}

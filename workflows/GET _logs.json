@@ -1,0 +1,124 @@
+{
+  "name": "GET /logs",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "logs",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "87f7abc6-ae94-41cd-b103-4b5e944bfddd",
+      "name": "Webhook",
+      "webhookId": "4eca1898-42c5-42bf-b790-37a091ce17ae"
+    },
+    {
+      "parameters": {
+        "collection": "logs",
+        "options": {},
+        "query": "={{ JSON.stringify($input.item.json) }}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "d728dfc1-9c06-4411-8c2c-cf71f5c44d6d",
+      "name": "MongoDB",
+      "credentials": {
+        "mongoDb": {
+          "id": "xeOLP7AP2ksFMjhq",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const { query } = $json;\nreturn [\n  {\n    json: {\n      filters: {\n        company: query.company ?? null,\n        user: query.user ?? null,\n        from: query.from ?? null,\n        to: query.to ?? null\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "848f21f2-b29a-4b1b-b829-b9acdb889917",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $json.filters;\nconst query = {};\n\nif (f.company) query[\"company.id\"] = f.company;\nif (f.user) query[\"user.id\"] = f.user;\nif (f.from || f.to) {\n  query.timestamp = {};\n  if (f.from) query.timestamp.$gte = new Date(f.from);\n  if (f.to) query.timestamp.$lte = new Date(f.to);\n}\n\nreturn query;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "b04c85d9-49ec-4e46-8b96-c4658b080cfe",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {
+    "Code1": [
+      {
+        "json": {
+          "user.id": "916298"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2e497965-fc95-4412-bb6e-c5ba080de5c0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "acc41aa7cd56bf47dec0a944ed742c8d1354f1c440307e341dfdeaf6055e847f"
+  },
+  "id": "RvCfKzZSGM4HophW",
+  "tags": []
+}
