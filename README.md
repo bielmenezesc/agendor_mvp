@@ -61,18 +61,46 @@ docker-compose up -d
 
 ## 🔗 Conexões Internas no n8n
 
-- **MongoDB:**
+### 🛠️ MongoDB
 
-  - Host: `mongodb`
-  - Porta: `27017`
-  - Database: `logs` (ou nome de sua escolha)
-  - Autenticação: desabilitada
+- **Host:** `mongodb`
+- **Porta:** `27017`
+- **Database:** `logs` (ou nome de sua escolha)
+- **Autenticação:** desabilitada
 
-- **Qdrant API:**
+### 🛠️ Qdrant API
 
-  - Base URL: `http://qdrant:6333`
+- **Base URL:** `http://qdrant:6333`
 
-**Observação:** estas configurações devem ser criadas nas Credenciais do n8n.
+Estas configurações devem ser criadas nas **Credenciais** do n8n.
+
+---
+
+## 🚀 Como Criar uma Collection no Qdrant
+
+Após subir os containers, é necessário criar manualmente a **collection** onde os embeddings serão armazenados. Para isso, utilize um **nó HTTP Request** dentro do seu workflow do n8n.
+
+### Passos:
+
+1. No seu workflow do n8n, adicione um nó **HTTP Request**.
+2. Configure o nó da seguinte forma:
+
+- **Method:** `PUT`  
+- **URL:** `http://qdrant:6333/collections/companies`  
+*(Substitua `"companies"` pelo nome da sua collection.)*
+
+- **Content Type:** `application/json`
+
+- **Body Parameters (RAW JSON):**
+
+```json
+{
+  "vectors": {
+    "size": 1536,
+    "distance": "Cosine"
+  }
+}
+```
 
 ---
 
