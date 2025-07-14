@@ -1,6 +1,8 @@
-# 🤖 AI Sales Agent Automation (n8n + Qdrant + MongoDB)
+# 🤖 Protótipo AVA
 
 Este projeto implementa um **AI Agent inteligente** para automatizar interações em linguagem natural com o CRM Agendor, utilizando **n8n**, **Qdrant**, **MongoDB** e **OpenAI API**.
+
+[![Assista o vídeo no YouTube](https://img.youtube.com/vi/QQi_P4H49uw/0.jpg)](https://youtu.be/QQi_P4H49uw)
 
 ---
 
