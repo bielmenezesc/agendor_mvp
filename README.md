@@ -63,10 +63,11 @@ docker-compose up -d
 
 ### 🛠️ MongoDB
 
-- **Host:** `mongodb`
-- **Porta:** `27017`
+- **Host:** `localhost`
+- **Porta:** `27017
 - **Database:** `logs` (ou nome de sua escolha)
-- **Autenticação:** desabilitada
+- **user:** `root`
+- **password:** `password1234`
 
 ### 🛠️ Qdrant API
 
@@ -85,9 +86,9 @@ Após subir os containers, é necessário criar manualmente a **collection** ond
 1. No seu workflow do n8n, adicione um nó **HTTP Request**.
 2. Configure o nó da seguinte forma:
 
-- **Method:** `PUT`  
+- **Method:** `PUT`
 - **URL:** `http://qdrant:6333/collections/companies`  
-*(Substitua `"companies"` pelo nome da sua collection.)*
+  _(Substitua `"companies"` pelo nome da sua collection.)_
 
 - **Content Type:** `application/json`
 

@@ -9,6 +9,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password1234
     ports:
       - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
 
   qdrant:
     image: qdrant/qdrant
