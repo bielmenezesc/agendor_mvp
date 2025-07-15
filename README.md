@@ -64,7 +64,7 @@ docker-compose up -d
 ### 🛠️ MongoDB
 
 - **Host:** `localhost`
-- **Porta:** `27017
+- **Porta:** `27017`
 - **Database:** `logs` (ou nome de sua escolha)
 - **user:** `root`
 - **password:** `password1234`
